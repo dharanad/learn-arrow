@@ -1,0 +1,7 @@
+[package]
+name = "learn-arrow"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arrow = { version = "53.3.0", features = ["default", "prettyprint", "ffi"] }
