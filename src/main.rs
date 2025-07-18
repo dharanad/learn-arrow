@@ -1,5 +1,5 @@
 fn main() {
-    assigment_1::three();
+    assigment_2::one();
 }
 
 #[allow(dead_code)]
@@ -9,10 +9,14 @@ mod assigment_1 {
     use std::sync::Arc;
 
     use arrow::{
-        array::{Array, ArrayRef, AsArray, Decimal128Array, Float32Array, Int32Array, Int64Array, RecordBatch, StringArray},
-        datatypes::{DataType, Field, Int64Type, Schema},
+        array::{
+            Array, ArrayRef, Decimal128Array, Float32Array, Int32Array, Int64Array, RecordBatch,
+            StringArray,
+        },
+        datatypes::{DataType, Field, Schema},
     };
 
+    // Basic Arrow Array Creation
     pub fn one() {
         // Creating Int32 Array
         let a_i32: arrow::array::PrimitiveArray<arrow::datatypes::Int32Type> =
@@ -56,6 +60,7 @@ mod assigment_1 {
         println!("{:?}", arr_ref)
     }
 
+    // Schema Creation
     pub fn two() {
         // empty schema
         let empty_schema = Schema::empty();
@@ -123,6 +128,7 @@ mod assigment_1 {
         );
     }
 
+    // Record batch creation
     pub fn three() {
         /*
 
@@ -150,30 +156,155 @@ mod assigment_1 {
         ]);
 
         let custkey = Int64Array::from(vec![25062, 25063, 25064, 25065]);
-        let name = StringArray::from(vec!["Customer#000025062", "Customer#000025063", "Customer#000025064", "Customer#000025065"]);
-        let address = StringArray::from(vec!["PodqaseGMDrG", "ycFfPCs0iXRVmOspKO7OQOx", "k0rDE0jHbR", "qNkYPUKZtk"]);
-        let nation_key = Int64Array::from(vec![12, 17, 16, 3]);
-        let accbal = Decimal128Array::from(vec![31557, -25378, 62509, 990228]).with_precision_and_scale(15, 2).unwrap();
-
-        let record_batch = RecordBatch::try_new(Arc::new(customer_schema), vec![
-            Arc::new(custkey),
-            Arc::new(name),
-            Arc::new(address),
-            Arc::new(nation_key),
-            Arc::new(accbal)
+        let name = StringArray::from(vec![
+            "Customer#000025062",
+            "Customer#000025063",
+            "Customer#000025064",
+            "Customer#000025065",
         ]);
+        let address = StringArray::from(vec![
+            "PodqaseGMDrG",
+            "ycFfPCs0iXRVmOspKO7OQOx",
+            "k0rDE0jHbR",
+            "qNkYPUKZtk",
+        ]);
+        let nation_key = Int64Array::from(vec![12, 17, 16, 3]);
+        let accbal = Decimal128Array::from(vec![31557, -25378, 62509, 990228])
+            .with_precision_and_scale(15, 2)
+            .unwrap();
+
+        let record_batch = RecordBatch::try_new(
+            Arc::new(customer_schema),
+            vec![
+                Arc::new(custkey),
+                Arc::new(name),
+                Arc::new(address),
+                Arc::new(nation_key),
+                Arc::new(accbal),
+            ],
+        );
         assert!(record_batch.is_ok());
         let record_batch = record_batch.unwrap();
 
         assert_eq!(record_batch.num_columns(), 5);
         assert_eq!(record_batch.num_rows(), 4);
 
-        
         let custkey_col = record_batch.column_by_name("c_custkey");
         assert!(custkey_col.is_some());
         let custkey_col = custkey_col.unwrap();
         assert_eq!(custkey_col.data_type(), &DataType::Int64);
         let downcasted_array = custkey_col.as_any().downcast_ref::<Int64Array>().unwrap();
         assert_eq!(downcasted_array.value(1), 25063);
+    }
+}
+
+mod assigment_2 {
+
+    use std::sync::Arc;
+
+    use arrow::{
+        array::{
+            Array, ArrayDataBuilder, ArrayRef, AsArray, BooleanArray, Int32Builder, Int64Array, MapArray, StringArray, StructArray, UInt64Array
+        },
+        buffer::{BooleanBuffer, Buffer, NullBuffer},
+        datatypes::{Field, Int64Type},
+    };
+
+    // Array creation from Builder and nested array creation
+    pub fn one() {
+        // Note:  Capacity hint can optimize memory
+        let mut one_builder = Int32Builder::new();
+        one_builder.append_value(10);
+        one_builder.append_null();
+        one_builder.append_value_n(5, 3);
+        one_builder.append_null();
+        one_builder.append_value(3);
+
+        // [10, null, 5, 5, 5, null, 3]
+        let one = one_builder.finish();
+        assert_eq!(one.value(0), 10);
+        assert!(one.is_null(1));
+        assert_eq!(one.value(2), 5);
+        assert!(one.is_null(5));
+        assert_eq!(one.value(6), 3);
+
+        let struct_fields = vec![
+            Field::new("id", arrow::datatypes::DataType::UInt64, false),
+            Field::new("name", arrow::datatypes::DataType::Utf8, false),
+            Field::new("is_employed", arrow::datatypes::DataType::Boolean, true),
+        ];
+        let struct_id_array = UInt64Array::from(vec![1, 2, 3]);
+        let struct_name_array = StringArray::from(vec!["Dharan", "Danesh", "Raju"]);
+        let struct_is_employed_array = BooleanArray::from(vec![None, Some(true), Some(true)]);
+
+        let info_struct_array_builder =
+            ArrayDataBuilder::new(arrow::datatypes::DataType::Struct(struct_fields.into()))
+                .len(3)
+                .add_child_data(struct_id_array.into_data())
+                .add_child_data(struct_name_array.into_data())
+                .add_child_data(struct_is_employed_array.into_data())
+                .nulls(Some(NullBuffer::new(BooleanBuffer::from(vec![
+                    true, false, true,
+                ]))));
+
+        let info_struct_array = StructArray::from(info_struct_array_builder.build().unwrap());
+        // println!("{:?}", info_struct_array);
+        assert!(!info_struct_array.is_null(0));
+        assert!(info_struct_array.is_null(1));
+        assert!(!info_struct_array.is_null(2));
+
+        assert_eq!(info_struct_array.len(), 3);
+
+        let keys_array = Arc::new(StringArray::from(vec![
+            "a", "b", "c", "d", "e", "f", "g", "h", "i",
+        ])) as ArrayRef;
+        let values_array = Arc::new(Int64Array::from(vec![
+            Some(1),
+            Some(2),
+            Some(3),
+            Some(4),
+            None,
+            Some(6),
+            Some(7),
+            None,
+            None,
+        ])) as ArrayRef;
+
+        let key_values_struct_array = StructArray::from(vec![
+            (
+                Arc::new(Field::new("keys", arrow::datatypes::DataType::Utf8, false)),
+                keys_array,
+            ),
+            (
+                Arc::new(Field::new(
+                    "values",
+                    arrow::datatypes::DataType::Int64,
+                    true,
+                )),
+                values_array,
+            ),
+        ]);
+
+        let entries_buffer = Buffer::from(vec![0, 3, 6, 9]);
+        let map_array_builder = ArrayDataBuilder::new(arrow::datatypes::DataType::Map(
+            Arc::new(Field::new(
+                "entries",
+                arrow::datatypes::DataType::Struct(key_values_struct_array.fields().to_owned()),
+                false,
+            )),
+            false,
+        ))
+        .len(3)
+        .add_buffer(entries_buffer)
+        .add_child_data(key_values_struct_array.into_data())
+        .nulls(None);
+
+        let map_array = MapArray::from(map_array_builder.build().unwrap()) as MapArray;
+        assert_eq!(map_array.len(), 3);
+        let first_entry = map_array.value(0);
+        let first_entry_keys = first_entry.column(0).as_string::<i32>();
+        println!("{:?}", first_entry_keys);
+        let first_entry_values = first_entry.column(1).as_primitive::<Int64Type>();
+        println!("{:?}", first_entry_values);
     }
 }
