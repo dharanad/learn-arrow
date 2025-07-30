@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 arrow = { version = "54.2.1", features = ["default", "prettyprint", "ffi"] }
+rand = "0.8"

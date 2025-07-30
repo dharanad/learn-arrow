@@ -1,5 +1,6 @@
+mod operators;
 fn main() {
-    assigment_2::one();
+    assigment_2::two();
 }
 
 #[allow(dead_code)]
@@ -204,10 +205,10 @@ mod assigment_2 {
 
     use arrow::{
         array::{
-            Array, ArrayDataBuilder, ArrayRef, AsArray, BooleanArray, Int32Builder, Int64Array, MapArray, StringArray, StructArray, UInt64Array
+            Array, ArrayDataBuilder, ArrayRef, AsArray, BooleanArray, Int32Array, Int32Builder, Int64Array, MapArray, StringArray, StructArray, UInt64Array
         },
         buffer::{BooleanBuffer, Buffer, NullBuffer},
-        datatypes::{Field, Int64Type},
+        datatypes::{DataType, Field, Int64Type},
     };
 
     // Array creation from Builder and nested array creation
@@ -306,5 +307,29 @@ mod assigment_2 {
         println!("{:?}", first_entry_keys);
         let first_entry_values = first_entry.column(1).as_primitive::<Int64Type>();
         println!("{:?}", first_entry_values);
+    }
+
+
+    pub fn two() {
+        let one = Int32Array::from(vec![1, 2, 3]);
+        let two = Int32Array::from(vec![9, 8, 7]);
+
+        let add_result = arrow::compute::kernels::numeric::add(&one, &two).unwrap();
+        assert_eq!(add_result.data_type(), &DataType::Int32);
+        println!("{:?}", add_result);
+
+        let mul_result = arrow::compute::kernels::numeric::mul(&one, &two).unwrap();
+        assert_eq!(mul_result.data_type(), &DataType::Int32);
+        println!("{:?}", mul_result);
+
+        let sum_aggr = arrow::compute::kernels::aggregate::sum(&one).unwrap();
+        assert_eq!(sum_aggr, 6);
+
+        let array_min = arrow::compute::kernels::aggregate::min(&two).unwrap();
+        assert_eq!(array_min, 7);
+        let array_max = arrow::compute::kernels::aggregate::max(&two).unwrap();
+        assert_eq!(array_max, 9);
+
+
     }
 }
