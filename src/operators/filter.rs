@@ -19,7 +19,7 @@ impl Operator for Filter {
 
     fn next(&self) -> RecordBatch {
         let data = self.child.next();
-        data.
+        panic!()
     }
 
     fn schema(&self) -> SchemaRef {
